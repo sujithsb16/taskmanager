@@ -21,6 +21,10 @@ const initialValues = {
   password: "",
 };
 
+export const toasts = (error) => {
+  toast.error(error);
+};
+
 const UserLogin = () => {
 
 const Navigate = useNavigate();
@@ -53,7 +57,7 @@ const [button , setButton] =useState(false)
           const result = await dispatch(loginUser(userData));
 
            console.log(result);
-           toast.error(result);
+          
 
          } catch (error) {
       
@@ -81,7 +85,7 @@ const [button , setButton] =useState(false)
         sx={{
           bgcolor: "#E9E8E8",
           marginTop: 0,
-          height: "100vh",
+          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -99,7 +103,8 @@ const [button , setButton] =useState(false)
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            maxWidth: "100%",
+            maxWidth: { xs: "100%", md: "60%", lg: "50%" },
+            width: { xs: "100%", md: "80%", lg: "70%" },
           }}
         >
           <Box
@@ -126,12 +131,12 @@ const [button , setButton] =useState(false)
               required
               fullWidth
               id="email"
+              autoComplete="email"
+              autoFocus
+              name="email"
               label={
                 errors.email && touched.email ? errors.email : "Email Address"
               }
-              name="email"
-              autoComplete="email"
-              autoFocus
               value={values.email}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -186,9 +191,7 @@ const [button , setButton] =useState(false)
               sx={{ mt: "1rem" }}
             >
               <Grid item xs={12} sm={6}>
-                <Link to="#" variant="body2">
-                  Forgot password?
-                </Link>
+                
               </Grid>
               <Grid
                 item
@@ -196,7 +199,7 @@ const [button , setButton] =useState(false)
                 sm={6}
                 sx={{ textAlign: { xs: "center", sm: "right" } }}
               >
-                <Link to="/usersignup" variant="body2">
+                <Link to="/register" variant="body2">
                   {"Don't have an account? Sign Up"}
                 </Link>
               </Grid>

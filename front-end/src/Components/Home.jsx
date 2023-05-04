@@ -15,7 +15,13 @@ import "react-date-range/dist/styles.css"; // main css file
 import "react-date-range/dist/theme/default.css";
 import { DateRange } from "react-date-range";
 import { useDispatch, useSelector } from "react-redux";
-import { addTask, deleteTask, getTask, setRemainder, updateTask } from "../actions/userActions";
+import {
+  addTask,
+  deleteTask,
+  getTask,
+  setRemainder,
+  updateTask,
+} from "../actions/userActions";
 import Tooltip from "@mui/material/Tooltip";
 import Slider from "@mui/material/Slider";
 import PropTypes from "prop-types";
@@ -27,9 +33,9 @@ import "react-clock/dist/Clock.css";
 import moment from "moment"; // import moment library for handling dates
 import toast, { Toaster } from "react-hot-toast";
 import ReactPaginate from "react-paginate";
-
-
-
+import { useFormik } from "formik";
+import { addTaskSchema } from "../schema/validation";
+import { axiosUserInstance } from "../utility/axios";
 
 function ValueLabelComponent(props) {
   const { children, value } = props;
@@ -46,14 +52,20 @@ ValueLabelComponent.propTypes = {
   value: PropTypes.number.isRequired,
 };
 
+const  initialTaskValues={
+  title:"",
+  description:"",
+}
 
 const Home = () => {
   ///////////////////////////////////////////////////
-  const userData = useSelector((state) => state.userLogin);
-
-  const { tasks } = useSelector((state) => state.getTask);
+//  const [tasks, setTasks] = useState([]);
+  const { tasks, pendingTasks, totalTasks } = useSelector(
+    (state) => state.getTask
+  );
   const { addTaskSuccess } = useSelector((state) => state.addTask);
   const { updateSuccess } = useSelector((state) => state.updateTask);
+  const { deleteTaskSuccess } = useSelector((state) => state.deleteTask);
   const { addRemainderSuccess } = useSelector(
     (state) => state.addRemainderTask
   );
@@ -61,50 +73,28 @@ const Home = () => {
 
   const dispatch = useDispatch();
 
-  const pendingTasks = tasks.filter((task) => !task.status);
+  
 
+  ///////////////////task validation//////////////////////////
+  const { values, errors, touched, handleBlur, handleChange, handleSubmit } =
+    useFormik({
+      initialValues: initialTaskValues,
+      validationSchema: addTaskSchema,
+      onSubmit: (values) => {
+        submitHandler();
+
+        console.log(values);
+      },
+    });
+        console.log(errors);
+
+
+  ////////////////////////////////////////////////////////////
 
   /////////////////add task start////////////////////
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
-// const [reminder, setReminder] = useState(false);
-
-
-
-
-
- const handleReminderChange = (event) => {
-    setReminder(event.target.checked);
-  };
-
-  const setReminder = (task) => {
-    const endDate = new Date(task.endDate);
-    const currentTime = new Date();
-    const timeDiff = endDate.getTime() - currentTime.getTime();
-
-    if (timeDiff > 0) {
-      // Reminder is in the future
-      const seconds = Math.floor(timeDiff / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const hours = Math.floor(minutes / 60);
-      const days = Math.floor(hours / 24);
-
-      // Show reminder message
-      alert(
-        `Reminder: Task "${task.title}" ends in ${days} days, ${
-          hours % 24
-        } hours, ${minutes % 60} minutes`
-      );
-    } else {
-      // Reminder is in the past
-      alert(`Task "${task.title}" has already ended.`);
-    }
-  };
-
-
 
   const handleOpen = () => {
     setOpen(true);
@@ -113,13 +103,18 @@ const Home = () => {
   const handleClose = () => {
     setOpen(false);
   };
-  const handleSubmit = async () => {
-    const taskData = { title, description, startDate, endDate };
+  const submitHandler = async () => {
+    const taskData = { title:values.title, description:values.description, startDate, endDate };
     // Handle form submission here
 
     dispatch(addTask(taskData, tasks));
     handleClose();
-    console.log({ title, description, startDate, endDate });
+    console.log({
+      title: values.title,
+      description: values.description,
+      startDate,
+      endDate,
+    });
     setOpen(false);
   };
 
@@ -136,12 +131,6 @@ const Home = () => {
   const [editDescription, setEditDescription] = useState("");
   const [editStartDate, setEditStartDate] = useState(new Date());
   const [editEndDate, setEditEndDate] = useState(new Date());
-
-  
-
-
-
-
 
   const editHandleClose = () => {
     setEditOpen(false);
@@ -160,67 +149,61 @@ const Home = () => {
     setEditEndDate(item.selection.endDate);
   };
 
-   const handleUpdate = (e) => {
-    e.preventDefault()
-     const updatedTask = {
-       title: editTitle,
-       description: editDescription,
-       startDate: editStartDate,
-       endDate: editEndDate,
-       progress,
-     };
-     console.log(updatedTask);
-     dispatch(updateTask(id, updatedTask));
+  const handleUpdate = (e) => {
+    e.preventDefault();
+    const updatedTask = {
+      title: editTitle,
+      description: editDescription,
+      startDate: editStartDate,
+      endDate: editEndDate,
+      progress,
+    };
+    console.log(updatedTask);
+    dispatch(updateTask(id, updatedTask));
     //  // resetHandler();
-     editHandleClose();
-   };
+    editHandleClose();
+  };
 
-   const [progress, setProgress] = useState("");
-   const [id, setId] = useState("");
-   const editHandleOpen = (id) => {
-     const task = tasks.find((task) => task.id === id);
-     if (task) {
-       setEditTitle(task.title);
-       setEditDescription(task.description);
+  const [progress, setProgress] = useState("");
+  const [id, setId] = useState("");
+  const editHandleOpen = (id) => {
+    const task = tasks.find((task) => task.id === id);
+    if (task) {
+      setEditTitle(task.title);
+      setEditDescription(task.description);
       //  setEditStartDate(task.startDate);
       //  setEditEndDate(task.endDate);
-       setProgress(task.progress);
-       setId(id);
-     }
-     setEditOpen(true);
-   };
+      setProgress(task.progress);
+      setId(id);
+    }
+    setEditOpen(true);
+  };
 
   ///////////////////update task end/////////////////////
 
   //////////////////set remainder start/////////////////
 
+  const [remainder, onChange] = useState(new Date());
 
-const [remainder, onChange] = useState(new Date());
+  const [remainderOpen, setRemainderOpen] = useState(false);
+  const remainderHandleOpen = (id) => {
+    setId(id);
+    setRemainderOpen(true);
+  };
 
+  const handleRemainderSubmit = async () => {
+    const taskData = { remainder };
 
-    const [remainderOpen, setRemainderOpen] = useState(false);
-const remainderHandleOpen = (id) => {
-  setId(id)
-  setRemainderOpen(true);
-};
+    dispatch(setRemainder(id, taskData));
 
+    setRemainderOpen(false);
+  };
 
-
-const handleRemainderSubmit = async () => {
-
- const taskData = {remainder}
-
-  dispatch(setRemainder(id, taskData));
- 
-  setRemainderOpen(false);
-};
-
-const remainderHandleClose = () => {
-  setRemainderOpen(false);
-};
+  const remainderHandleClose = () => {
+    setRemainderOpen(false);
+  };
 
   ///////////////////set remainder end////////////////////////////////
-
 
   ///////////task delete start////////////////////////
 
@@ -229,43 +212,80 @@ const remainderHandleClose = () => {
   };
 
   ////////////task delete end//////////////////////
- 
 
-
-  useEffect(() => {
-    dispatch(getTask());
-  }, [dispatch, addTaskSuccess, updateSuccess, addRemainderSuccess]);
-
+  //////////////////task remainder start////////////////
 
   function TaskList({ tasks }) {
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      checkReminders();
-    }, 60000); // check reminders every minute
+    useEffect(() => {
+      const intervalId = setInterval(() => {
+        checkReminders();
+      }, 60000); // check reminders every minute
 
-    return () => clearInterval(intervalId); // clear interval on unmounting the component
-  }, []); // run the effect only on component mounting
+      return () => clearInterval(intervalId); // clear interval on unmounting the component
+    }, []); // run the effect only on component mounting
 
-  const checkReminders = () => {
-    const now = moment();
-    tasks.forEach((task) => {
-      console.log(task.setRemainder);
-const remainderDateTime = moment.utc(task.setRemainder);
-console.log(remainderDateTime);
-     if (remainderDateTime.isSame(now, "minute")) {
-       toast.error(`Remainder for task "${task.title}"`);
-     }
+    const checkReminders = () => {
+      const now = moment();
+      tasks.forEach((task) => {
+        console.log(task.setRemainder);
+        const remainderDateTime = moment.utc(task.setRemainder);
+        console.log(remainderDateTime);
+        if (remainderDateTime.isSame(now, "minute")) {
+          toast.error(`Remainder for task "${task.title}"`);
+        }
+      });
+    };
+  }
 
-    });
-  };
+  //////////////////task remainder End////////////////
 
-}
+  ////////////pagiantion/////////////
+  
+   const [page, setPage] = useState(1);
+   const [limit, setLimit] = useState(2);
+  const { userInfo } = useSelector((state) => state.userLogin);
 
-// export default TaskList
+   useEffect(() => {
+     const fetchData = async () => {
+      //  const config = {
+      //    headers: {
+      //      "Content-Type": "application/json",
+      //      Authorization: `Bearer ${userInfo.token}`,
+      //    },
+      //  };
+      //  const response = await axiosUserInstance.get(
+      //    `/tasks/${page}/${limit}`,
+      //    config
+      //  );
+       dispatch(getTask(page, limit));
+       //  setTasks(response.data.result);
+     };
 
-//////////////////////////////////////
+     fetchData();
+   }, [
+     dispatch,
+     page,
+     limit,
+     addTaskSuccess,
+     updateSuccess,
+     addRemainderSuccess,
+     deleteTaskSuccess,
+     userInfo.token,
+   ]);
+  //////////////////////////////////
 
-//////////////////////////////////////
+  //////////////////////////////////////
+//  useEffect(() => {
+//    dispatch(getTask(page, limit));
+//  }, [
+//    dispatch,
+//    addTaskSuccess,
+//    updateSuccess,
+//    addRemainderSuccess,
+//    deleteTaskSuccess,
+//  ]);
+
+  //////////////////////////////////////
 
   return (
     <>
@@ -291,8 +311,8 @@ console.log(remainderDateTime);
               color: "primary.main",
             }}
           >
-            Your Scoreboard completed - {tasks.length - pendingTasks.length} -
-            pending - {pendingTasks.length} total - {tasks.length}
+            Your Scoreboard completed - {totalTasks - pendingTasks} - pending -{" "}
+            {pendingTasks} total - {totalTasks}
           </Typography>
         </Box>
 
@@ -330,22 +350,35 @@ console.log(remainderDateTime);
                 autoFocus
                 margin="dense"
                 id="title"
-                label="Title"
                 type="text"
                 fullWidth
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                required
+                name="title"
+                label="Title"
+                // label={errors.title && touched.title ? errors.title : "Title"}
+                // error={errors.title && touched.title ? true : false}
+                value={values.title}
+                onChange={handleChange}
+                onBlur={handleBlur}
               />
               <TextField
                 margin="dense"
                 id="description"
-                label="Description"
                 type="text"
                 fullWidth
+                required
                 multiline
                 rows={4}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                name="description"
+                // error={errors.description && touched.description ? true : false}
+                label={
+                  errors.description && touched.description
+                    ? errors.description
+                    : "Description"
+                }
+                value={values.description}
+                onChange={handleChange}
+                onBlur={handleBlur}
               />
               <Typography sx={{ marginY: 2 }}>
                 Select The Start Date and End Date
@@ -372,8 +405,8 @@ console.log(remainderDateTime);
               </Button>
             </DialogActions>
           </Dialog>
-          {/* ///////////////////////////////////////////////////
-          ////////////////edit task///////////////////////// */}
+          {/* //////////////////////add task end/////////////////////////////
+          ////////////////edit task start///////////////////////// */}
           <Dialog open={editOpen} onClose={editHandleClose}>
             <DialogTitle
               sx={{
@@ -450,7 +483,8 @@ console.log(remainderDateTime);
               </DialogActions>
             </form>
           </Dialog>
-          {/* /////////////////////// remainder/////////////////////////// */}
+          {/* ///////////////////////edit task end/////////////////////////// */}
+          {/* ///////////////////////add remainder start/////////////////////////// */}
 
           <Dialog open={remainderOpen} onClose={remainderHandleClose}>
             <DialogTitle
@@ -471,7 +505,7 @@ console.log(remainderDateTime);
             >
               Add Reminder
             </DialogTitle>
-            <DialogContent sx={{ minHeight: "20vw" }}>
+            <DialogContent sx={{ minHeight: "20vw", minWidth: "20vw" }}>
               {" "}
               <DateTimePicker onChange={onChange} value={remainder} />
             </DialogContent>
@@ -484,164 +518,202 @@ console.log(remainderDateTime);
               </Button>
             </DialogActions>
           </Dialog>
+          {/* ///////////////////////add remainder end/////////////////////////// */}
         </Box>
-        <Paper sx={{ padding: 2 }}>
-          <Grid
-            container
-            spacing={2}
-            justifyContent="center"
-            alignItems="center"
-          >
-            {tasks.map((task) => (
-              <Grid item xs={12} sm={6} key={task.id} sx={{ display: "flex" }}>
-                <Paper
-                  sx={{
-                    width: "50%",
-                    boxShadow: 2,
-                    padding: 5,
-                    marginLeft: "7.5vw",
-                    borderRadius: 10,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    position: "relative",
-                    minHeight: "40vh",
-                    backgroundColor: task.status ? "#E9E8E8" : "#E9E8E8",
-                    textAlign: "center", // Added textAlign property
-                  }}
-                >
-                  <Typography
-                    variant="h5"
-                    sx={{ position: "absolute", top: "10%" }}
+        <Paper sx={{ padding: 2, minHeight: "60vh" }}>
+          {tasks?.length == 0 ? (
+            <Typography
+              variant="h5"
+              style={{
+                color: "#0077b6", // change the color to a desired one
+                fontSize: "2rem", // increase the font size to a desired value
+                fontFamily: "Verdana, Geneva, sans-serif",
+                marginLeft: "34vw", // set a desired font family
+                marginTop: "10vw", // set a desired font family
+              }}
+            >
+              No More Tasks To Show
+            </Typography>
+          ) : (
+            <Grid
+              container
+              spacing={2}
+              justifyContent="center"
+              alignItems="center"
+            >
+              {tasks &&
+                tasks.map((task) => (
+                  <Grid
+                    item
+                    xs={12}
+                    sm={6}
+                    key={task.id}
+                    sx={{ display: "flex" }}
                   >
-                    {task.title}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      fontFamily: "Comic Sans MS",
-                      fontStyle: "italic",
-                      mb: 4,
-                      maxWidth: "80ch", // limit width to 80 characters
-                      overflowWrap: "break-word", // wrap long words to prevent overflow
-                    }}
-                  >
-                    {task.description}
-                  </Typography>
+                    <Paper
+                      sx={{
+                        width: "50%",
+                        boxShadow: 2,
+                        padding: 5,
+                        marginLeft: "7.5vw",
+                        borderRadius: 10,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        position: "relative",
+                        minHeight: "40vh",
+                        backgroundColor: task.status ? "#E9E8E8" : "#E9E8E8",
+                        textAlign: "center", // Added textAlign property
+                      }}
+                    >
+                      <Typography
+                        variant="h5"
+                        sx={{ position: "absolute", top: "10%" }}
+                      >
+                        {task.title}
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          fontFamily: "Comic Sans MS",
+                          fontStyle: "italic",
+                          mb: 4,
+                          maxWidth: "80ch", // limit width to 80 characters
+                          overflowWrap: "break-word", // wrap long words to prevent overflow
+                        }}
+                      >
+                        {task.description}
+                      </Typography>
 
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: task.status ? "green" : "brown",
-                      position: "absolute",
-                      left: "35%",
-                      bottom: "18%",
-                    }}
-                  >
-                    {task.progress}% completed
-                  </Typography>
-                  {/* <Typography
-                    variant="body1"
-                    sx={{
-                      position: "absolute",
-                      right: "10%",
-                      color: task.status ? "green" : "brown",
-                    }}
-                  >
-                    {task.status ? "Done" : "Pending"}
-                  </Typography> */}
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      position: "absolute",
-                      left: "15%",
-                      color: task.status ? "green" : "brown",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Remainder :-{" "}
-                    {format(
-                      new Date(task.setRemainder),
-                      "dd-MM-yyyy hh:mm:ss a"
-                    )}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      mt: 2,
-                      mr: 2,
-                    }}
-                  >
-                    <span>
-                      Start Date:{" "}
-                      {format(new Date(task.startDate), "dd-MM-yyyy")}
-                    </span>
-                    <span sx={{ marginLeft: "auto", marginRight: "10px" }}>
-                      End Date: {format(new Date(task.endDate), "dd-MM-yyyy")}
-                    </span>
-                  </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          color: task.status ? "green" : "brown",
+                          position: "absolute",
+                          left: "35%",
+                          bottom: "18%",
+                        }}
+                      >
+                        {task.progress}% completed
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          position: "absolute",
+                          left: "15%",
+                          color: task.status ? "green" : "brown",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {task.setRemainder ? (
+                          <>
+                            Remainder:{" "}
+                            {format(
+                              new Date(task.setRemainder),
+                              "dd-MM-yyyy hh:mm:ss a"
+                            )}
+                          </>
+                        ) : (
+                          ""
+                        )}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          mt: 2,
+                          mr: 2,
+                        }}
+                      >
+                        Start Date:{" "}
+                        {format(new Date(task.startDate), "dd-MM-yyyy")}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          mt: 1,
+                          mr: 2,
+                        }}
+                      >
+                        End Date: {format(new Date(task.endDate), "dd-MM-yyyy")}
+                      </Typography>
 
-                  <Button
-                    variant="contained"
-                    color="error"
-                    sx={{
-                      position: "absolute",
-                      left: "20px",
-                      bottom: "10px",
-                      width: "6vw",
-                      boxShadow: "5px 5px 15px rgba(190, 133, 255,1)",
-                      fontSize: "14px",
-                      padding: "8px 16px",
-                    }}
-                    onClick={() => handleDelete(task.id, tasks)}
-                  >
-                    Delete
-                  </Button>
-                  <Button
-                    sx={{
-                      color: "#000000",
-                      backgroundColor: "#C2C2C2",
-                      boxShadow: "5px 5px 15px rgba(190, 133, 255,1)",
-                      width: "70px",
-                      position: "absolute",
-                      right: "20px",
-                      bottom: "10px",
-                      fontSize: "14px",
-                      padding: "8px 16px",
-                      width: "6vw",
-                    }}
-                    onClick={() => {
-                      editHandleOpen(task.id);
-                    }}
-                  >
-                    Edit
-                  </Button>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        sx={{
+                          position: "absolute",
+                          left: "20px",
+                          bottom: "10px",
+                          width: "6vw",
+                          boxShadow: "5px 5px 15px rgba(190, 133, 255,1)",
+                          fontSize: "14px",
+                          padding: "8px 16px",
+                        }}
+                        onClick={() => handleDelete(task.id, tasks)}
+                      >
+                        Delete
+                      </Button>
+                      <Button
+                        sx={{
+                          color: "#000000",
+                          backgroundColor: "#C2C2C2",
+                          boxShadow: "5px 5px 15px rgba(190, 133, 255,1)",
+                          width: "70px",
+                          position: "absolute",
+                          right: "20px",
+                          bottom: "10px",
+                          fontSize: "14px",
+                          padding: "8px 16px",
+                          width: "6vw",
+                        }}
+                        onClick={() => {
+                          editHandleOpen(task.id);
+                        }}
+                      >
+                        Edit
+                      </Button>
 
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => remainderHandleOpen(task.id)}
-                    sx={{
-                      marginRight: 1,
-                      position: "absolute",
-                      bottom: "5%",
-                      left: "34%",
-                      fontSize: "0.8rem",
-                      height: "30px",
-                      minWidth: "11vw",
-                      width: "11vw",
-                    }}
-                  >
-                    {task.setRemainder ? "Edit Remainder" : "Add Reminder"}
-                  </Button>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => remainderHandleOpen(task.id)}
+                        sx={{
+                          marginRight: 1,
+                          position: "absolute",
+                          bottom: "5%",
+                          left: "32%",
+                          fontSize: "0.8rem",
+                          height: "30px",
+                          minWidth: "11vw",
+                          width: "11vw",
+                        }}
+                      >
+                        {task.setRemainder ? "Edit Remainder" : "Add Reminder"}
+                      </Button>
+                    </Paper>
+                  </Grid>
+                ))}
+            </Grid>
+          )}
         </Paper>
+        <Box sx={{ marginLeft: "41vw", my: 1 }}>
+          <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+            Previous Page
+          </button>
+          <button
+            disabled={tasks.length < limit}
+            onClick={() => setPage(page + 1)}
+          >
+            Next Page
+          </button>
+        </Box>
       </Box>
     </>
   );

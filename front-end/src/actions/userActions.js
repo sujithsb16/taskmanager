@@ -1,3 +1,4 @@
+import { toasts } from "../Components/UserLogin";
 import { addRemainderFail, addRemainderReq, addRemainderSuccess } from "../features/user/addRemainderSlice";
 import { addTaskFail, addTaskReq, addTaskSuccess } from "../features/user/addTaskSlice";
 import { deleteTaskFail, deleteTaskReq, deleteTaskSuccess } from "../features/user/deleteTaskSlice";
@@ -10,6 +11,9 @@ import {
   userRegisterFail,
 } from "../features/user/userRegisterSlice";
 import { axiosUserInstance } from "../utility/axios";
+
+
+
 
 
 
@@ -32,6 +36,7 @@ export const registerUser =
       if (response) {
         if (response.data) {
           dispatch(userRegisterSuccess(response.data));
+          
         } else {
           dispatch(userRegisterFail(response.data.message));
         }
@@ -65,6 +70,7 @@ export const registerUser =
       );
       if (data.message) {
         dispatch(userLoginFail(data.message));
+        toasts(data.message);
         return data.message
       } else {
         dispatch(userLoginSuccess(data));
@@ -124,7 +130,7 @@ export const registerUser =
   };
 
 
-   export const getTask = () => async (dispatch, getState) => {
+   export const getTask = (page, limit) => async (dispatch, getState) => {
      try {
        dispatch(getTaskReq());
        const {
@@ -139,7 +145,7 @@ export const registerUser =
        };
 
        const response = await axiosUserInstance.get(
-         "/gettask",
+         `/tasks/${page}/${limit}`,
          config
        );
        if (response) {
@@ -186,8 +192,8 @@ export const registerUser =
           if (response.data) {
 
             dispatch(deleteTaskSuccess());
-            const updatedTasks = await tasks.filter((task) => task.id !== id);
-           dispatch(getTaskSuccess(updatedTasks));
+          //   const updatedTasks = await tasks.filter((task) => task.id !== id);
+          //  dispatch(getTaskSuccess(updatedTasks));
           } else {
             console.log(response);
             dispatch(deleteTaskFail(response.message));

@@ -31,7 +31,7 @@ const settings = ["Profile", "Logout"];
 function UserHeader() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const userData = useSelector((state) => state.userLogin);
+  const {userInfo, token} = useSelector((state) => state.userLogin);
 //   let userInfo;
 //   if (userLogin) {
 //     userInfo = userLogin.userInfo;
@@ -101,10 +101,10 @@ function UserHeader() {
               alignItems: "center",
               justifyContent: "flex-end",
             }}
-          >
-            <Typography onClick={() => logoutHandler()}>
+          >{userInfo?<Typography onClick={() => logoutHandler()}>
               <LogoutIcon />
-            </Typography>
+            </Typography>:"" }
+            
           </Box>
         </Toolbar>
       </Container>

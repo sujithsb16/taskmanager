@@ -1,5 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
-const initialState = {};
+const initialState = {
+  loadingRegister: false,
+  error: null,
+};
 const userRegisterSlice = createSlice({
   name: "user",
   initialState,
