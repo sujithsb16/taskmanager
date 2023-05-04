@@ -17,6 +17,7 @@ const UserFooter = () => {
           display: "flex",
           justifyContent: "space-around",
           marginTop: 0,
+          
         }}
         direction={isAboveLgScreen ? "row" : "column"}
       >

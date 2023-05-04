@@ -10,6 +10,8 @@ import {
   Box,
   Grid,
   Paper,
+  Modal,
+  Stack,
 } from "@mui/material";
 import "react-date-range/dist/styles.css"; // main css file
 import "react-date-range/dist/theme/default.css";
@@ -242,7 +244,7 @@ const Home = () => {
   ////////////pagiantion/////////////
   
    const [page, setPage] = useState(1);
-   const [limit, setLimit] = useState(2);
+   const [limit, setLimit] = useState(3);
   const { userInfo } = useSelector((state) => state.userLogin);
 
    useEffect(() => {
@@ -289,23 +291,24 @@ const Home = () => {
 
   return (
     <>
-      <Box maxWidth justifyContent="center" sx={{ minHeight: "80vh" }}>
-        <Toaster toasterOptions={{ duratiom: 8000 }} />
-
+      <Box sx={{ minHeight: "100vh", padding: 0 }}>
+        <Toaster toasterOptions={{ duration: 8000 }} />
         <Box
-          maxWidth
           sx={{
             bgcolor: "#E9E8E8",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100px",
           }}
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
         >
           <TaskList tasks={tasks} />
           <Typography
             variant="h5"
-            fontWeight={{ xs: 200, sm: 200, md: 200, lg: 200 }}
-            my={{ xs: 0.5, sm: 1, md: 1.6, lg: 2 }}
+            fontWeight={200}
+            my={1}
+            textAlign="center"
             sx={{
               fontFamily: "Inria Serif",
               color: "primary.main",
@@ -314,14 +317,12 @@ const Home = () => {
             Your Scoreboard completed - {totalTasks - pendingTasks} - pending -{" "}
             {pendingTasks} total - {totalTasks}
           </Typography>
-        </Box>
 
-        <Box display="flex" justifyContent="center" mt={2}>
           <Button
             variant="contained"
             color="primary"
             onClick={handleOpen}
-            sx={{ marginRight: 2 }}
+            sx={{ marginBottom: 2 }}
           >
             Add Task
           </Button>
@@ -520,200 +521,159 @@ const Home = () => {
           </Dialog>
           {/* ///////////////////////add remainder end/////////////////////////// */}
         </Box>
-        <Paper sx={{ padding: 2, minHeight: "60vh" }}>
+        <Paper sx={{ padding:3, minHeight: "calc(100vh - 230px)" }}>
           {tasks?.length == 0 ? (
             <Typography
               variant="h5"
-              style={{
-                color: "#0077b6", // change the color to a desired one
-                fontSize: "2rem", // increase the font size to a desired value
+              sx={{
+                color: "#0077b6",
+                fontSize: "1.5rem",
                 fontFamily: "Verdana, Geneva, sans-serif",
-                marginLeft: "34vw", // set a desired font family
-                marginTop: "10vw", // set a desired font family
+                marginTop: "2rem",
+                textAlign: "center",
               }}
             >
-              No More Tasks To Show
+              No Tasks To Show
             </Typography>
           ) : (
-            <Grid
-              container
-              spacing={2}
-              justifyContent="center"
-              alignItems="center"
-            >
-              {tasks &&
-                tasks.map((task) => (
-                  <Grid
-                    item
-                    xs={12}
-                    sm={6}
-                    key={task.id}
-                    sx={{ display: "flex" }}
+            <Grid container spacing={2}>
+              {tasks.map((task) => (
+                <Grid item sm={12} lg={4} key={task.id}>
+                  <Box
+                    sx={{
+                      boxShadow: 2,
+                      padding: 2,
+                      borderRadius: 10,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      minHeight: "42vh",
+                      minWidth: "40vh",
+                      backgroundColor: task.status ? "#E9E8E8" : "#E9E8E8",
+                      textAlign: "center",
+                    }}
                   >
-                    <Paper
+                    <Typography variant="h5" sx={{ marginTop: 1 }}>
+                      {task.title}
+                    </Typography>
+
+                    <Typography
+                      variant="body1"
                       sx={{
-                        width: "50%",
-                        boxShadow: 2,
-                        padding: 5,
-                        marginLeft: "7.5vw",
-                        borderRadius: 10,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        position: "relative",
-                        minHeight: "40vh",
-                        backgroundColor: task.status ? "#E9E8E8" : "#E9E8E8",
-                        textAlign: "center", // Added textAlign property
+                        fontFamily: "Comic Sans MS",
+                        fontStyle: "italic",
+                        mb: 1,
+                        maxWidth: "80ch",
+                        overflowWrap: "break-word",
                       }}
                     >
-                      <Typography
-                        variant="h5"
-                        sx={{ position: "absolute", top: "10%" }}
-                      >
-                        {task.title}
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          fontFamily: "Comic Sans MS",
-                          fontStyle: "italic",
-                          mb: 4,
-                          maxWidth: "80ch", // limit width to 80 characters
-                          overflowWrap: "break-word", // wrap long words to prevent overflow
-                        }}
-                      >
-                        {task.description}
-                      </Typography>
+                      {task.description}
+                    </Typography>
 
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: task.status ? "green" : "brown",
+                      }}
+                    >
+                      {task.progress}% completed
+                    </Typography>
+
+                    {task.setRemainder && (
                       <Typography
                         variant="body1"
                         sx={{
-                          color: task.status ? "green" : "brown",
-                          position: "absolute",
-                          left: "35%",
-                          bottom: "18%",
-                        }}
-                      >
-                        {task.progress}% completed
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          position: "absolute",
-                          left: "15%",
                           color: task.status ? "green" : "brown",
                           fontWeight: 600,
+                          mb: 1,
                         }}
                       >
-                        {task.setRemainder ? (
-                          <>
-                            Remainder:{" "}
-                            {format(
-                              new Date(task.setRemainder),
-                              "dd-MM-yyyy hh:mm:ss a"
-                            )}
-                          </>
-                        ) : (
-                          ""
+                        Remainder:{" "}
+                        {format(
+                          new Date(task.setRemainder),
+                          "dd-MM-yyyy hh:mm:ss a"
                         )}
                       </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          mt: 2,
-                          mr: 2,
-                        }}
-                      >
-                        Start Date:{" "}
-                        {format(new Date(task.startDate), "dd-MM-yyyy")}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          mt: 1,
-                          mr: 2,
-                        }}
-                      >
-                        End Date: {format(new Date(task.endDate), "dd-MM-yyyy")}
-                      </Typography>
+                    )}
 
-                      <Button
-                        variant="contained"
-                        color="error"
-                        sx={{
-                          position: "absolute",
-                          left: "20px",
-                          bottom: "10px",
-                          width: "6vw",
-                          boxShadow: "5px 5px 15px rgba(190, 133, 255,1)",
-                          fontSize: "14px",
-                          padding: "8px 16px",
-                        }}
-                        onClick={() => handleDelete(task.id, tasks)}
-                      >
-                        Delete
-                      </Button>
-                      <Button
-                        sx={{
-                          color: "#000000",
-                          backgroundColor: "#C2C2C2",
-                          boxShadow: "5px 5px 15px rgba(190, 133, 255,1)",
-                          width: "70px",
-                          position: "absolute",
-                          right: "20px",
-                          bottom: "10px",
-                          fontSize: "14px",
-                          padding: "8px 16px",
-                          width: "6vw",
-                        }}
-                        onClick={() => {
-                          editHandleOpen(task.id);
-                        }}
-                      >
-                        Edit
-                      </Button>
+                    <Typography
+                      variant="body2"
+                      sx={{ display: "flex", justifyContent: "center" }}
+                    >
+                      Start Date:{" "}
+                      {format(new Date(task.startDate), "dd-MM-yyyy")}
+                    </Typography>
 
+                    <Typography
+                      variant="body2"
+                      sx={{ display: "flex", justifyContent: "center" }}
+                    >
+                      Due Date: {format(new Date(task.endDate), "dd-MM-yyyy")}
+                    </Typography>
+
+                    <Box
+                      sx={{ display: "flex", justifyContent: "space-evenly" }}
+                    >
                       <Button
                         variant="contained"
                         color="primary"
-                        onClick={() => remainderHandleOpen(task.id)}
-                        sx={{
-                          marginRight: 1,
-                          position: "absolute",
-                          bottom: "5%",
-                          left: "32%",
-                          fontSize: "0.8rem",
-                          height: "30px",
-                          minWidth: "11vw",
-                          width: "11vw",
+                        onClick={() => {
+                          editHandleOpen(task.id);
                         }}
+                        sx={{ margin: "0.5rem" }}
                       >
-                        {task.setRemainder ? "Edit Remainder" : "Add Reminder"}
+                        Update
                       </Button>
-                    </Paper>
-                  </Grid>
-                ))}
+
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={() => handleDelete(task.id)}
+                        sx={{ margin: "0.5rem" }}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+
+                    {!task.status && (
+                      <Box sx={{ display: "flex", justifyContent: "center" }}>
+                        <Button
+                          variant="contained"
+                          color="secondary"
+                          onClick={() => remainderHandleOpen(task.id)}
+                          sx={{ margin: "0.5rem" }}
+                        >
+                          {task.setRemainder
+                            ? "Edit Remainder"
+                            : "Add Reminder"}
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
+                </Grid>
+              ))}
             </Grid>
           )}
         </Paper>
-        <Box sx={{ marginLeft: "41vw", my: 1 }}>
-          <button disabled={page === 1} onClick={() => setPage(page - 1)}>
-            Previous Page
-          </button>
-          <button
-            disabled={tasks.length < limit}
-            onClick={() => setPage(page + 1)}
-          >
-            Next Page
-          </button>
-        </Box>
+
+        {/*  */}
+      </Box>
+      <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+        <Button
+          variant="contained"
+          disabled={page === 1}
+          onClick={() => setPage(page - 1)}
+          sx={{ mr: 2 }}
+        >
+          Previous Page
+        </Button>
+        <Button
+          variant="contained"
+          disabled={tasks.length < limit}
+          onClick={() => setPage(page + 1)}
+        >
+          Next Page
+        </Button>
       </Box>
     </>
   );
